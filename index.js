@@ -3,20 +3,18 @@ var pumpify = require('pumpify')
 var through = require('through2')
 var select = require('html-select')
 var tokenize = require('html-tokenize')
-var concat = require('concat-stream')
-var streamsEnd = require('./streams-end')
+var jsonComposeStream = require('json-compose-stream')
 
-module.exports = function (schema, options) {
+module.exports = function (schema) {
   var writeStream = createSelectStream(schema)
-  var readStream = through.obj()
-  var data = {}
+  var jsonStream = jsonComposeStream()
+  var cache = {}
 
-  var dup = duplexify.obj(writeStream, readStream)
+  var dup = duplexify.obj(writeStream, jsonStream)
 
   return dup
 
   function createSelectStream (schema) {
-    var ender = streamsEnd()
     var s = select()
     var stream = pumpify.obj(tokenize(), s, through.obj(skipThrough, onFlush))
 
@@ -36,36 +34,32 @@ module.exports = function (schema, options) {
       if (!keySchema.selector) return dup.emit('error', new Error('Selector must be provided'))
 
       s.select(keySchema.selector, function (el) {
-        if (keySchema.attribute) return setValue(el.getAttribute(keySchema.attribute))
+        if (keySchema.attribute) {
+          var value = el.getAttribute(keySchema.attribute)
+
+          if (keySchema.isArray) {
+            return (cache[key] = cache[key] || []).push(value)
+          } else {
+            return jsonStream.set(key, value)
+          }
+        }
 
         var tr = through.obj(function (row, enc, callback) {
           if (row[0] === 'text') this.push(row[1].toString())
           callback()
         })
 
-        var textStream = pumpify(el.createReadStream(), tr, concat(setValue))
-        ender.push(textStream)
+        pumpify(el.createReadStream(), tr)
+          .pipe(jsonStream.createSetStream(key))
       })
-
-      function setValue (value) {
-        if (keySchema.isArray) {
-          data[key] = data[key] || []
-          data[key].push(value)
-        } else {
-          data[key] = value
-        }
-      }
     })
 
     return stream
+  }
 
-    function onFlush (flush) {
-      ender.setCallback(function (err) {
-        if (err) dup.emit('error', err)
-        readStream.push(data)
-        flush()
-      })
-    }
+  function onFlush (flush) {
+    if (Object.keys(cache).length) jsonStream.set(cache)
+    flush()
   }
 }
 
