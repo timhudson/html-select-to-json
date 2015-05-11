@@ -1,6 +1,6 @@
 {
   "name": "html-select-to-json",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Convert html stream to json based on a schema of selectors",
   "main": "index.js",
   "directories": {
