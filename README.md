@@ -10,15 +10,13 @@ Convert html stream to json based on a schema of selectors
 var select = require('html-select-to-json')
 var request = require('request')
 
-request('https://github.com/mafintosh/torrent-mount')
+request('https://github.com/timhudson/html-select-to-json')
   .pipe(select({
     title: 'title',
     href: {selector: 'link[rel="canonical"]', attribute: 'href'},
     readme: '.markdown-body'
   }))
-  .on('data', function (data) {
-    console.log(data)
-  })
+  .pipe(process.stdout)
 ```
 
 ## License
