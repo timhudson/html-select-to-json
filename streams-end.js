@@ -38,7 +38,11 @@ StreamsEnd.prototype.setCallback = function (callback) {
 }
 
 StreamsEnd.prototype.attemptEnd = function () {
-  if (this._callback && this._endedCount === this._streams.length) {
+  if (this._callback && this.ended()) {
     return this._callback()
   }
+}
+
+StreamsEnd.prototype.ended = function () {
+  return this._endedCount === this._streams.length
 }

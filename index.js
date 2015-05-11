@@ -4,10 +4,12 @@ var through = require('through2')
 var select = require('html-select')
 var tokenize = require('html-tokenize')
 var jsonComposeStream = require('json-compose-stream')
+var streamsEnd = require('./streams-end')
 
 module.exports = function (schema) {
   var writeStream = createSelectStream(schema)
-  var jsonStream = jsonComposeStream()
+  var jsonStream = jsonComposeStream({end: false})
+  var ender = streamsEnd()
   var cache = {}
 
   var dup = duplexify.obj(writeStream, jsonStream)
@@ -31,7 +33,7 @@ module.exports = function (schema) {
         }
       }
 
-      if (!keySchema.selector) return dup.emit('error', new Error('Selector must be provided'))
+      if (!keySchema.selector) throw new Error('Selector must be provided')
 
       s.select(keySchema.selector, function (el) {
         if (keySchema.attribute) {
@@ -49,8 +51,10 @@ module.exports = function (schema) {
           callback()
         })
 
-        pumpify(el.createReadStream(), tr)
-          .pipe(jsonStream.createSetStream(key))
+        var textStream = pumpify(el.createReadStream(), tr)
+        textStream.pipe(jsonStream.createSetStream(key))
+
+        ender.push(textStream)
       })
     })
 
@@ -59,7 +63,15 @@ module.exports = function (schema) {
 
   function onFlush (flush) {
     if (Object.keys(cache).length) jsonStream.set(cache)
-    flush()
+    if (ender.ended()) {
+      jsonStream.end()
+      flush()
+    } else {
+      ender.setCallback(function () {
+        jsonStream.end()
+        flush()
+      })
+    }
   }
 }
 
