@@ -19,6 +19,22 @@ request('https://github.com/timhudson/html-select-to-json')
   .pipe(process.stdout)
 ```
 
+## CLI usage
+
+```
+usage: html-select-to-json SELECTORS
+
+  Convert html stream to json based on a schema of selectors
+
+example: html-select-to-json --title="title" --readme=".markdown-body"
+```
+
+## Install
+
+```
+npm install -g html-select-to-json
+```
+
 ## License
 
 MIT
