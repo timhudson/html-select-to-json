@@ -51,7 +51,8 @@ test('array requires a single object schema and returns array of all matching el
   fs.createReadStream(__dirname + '/wikipedia-pug.html')
     .pipe(htmlSelectToJSON({
       thumbnails: [{selector: '.thumbimage', attribute: 'src'}],
-      serious: [{selector: 'strong'}]
+      serious: [{selector: 'strong'}],
+      sections: ['#toc .tocnumber']
     }))
     .pipe(concat(function (result) {
       t.deepEqual(JSON.parse(result), {
@@ -63,7 +64,8 @@ test('array requires a single object schema and returns array of all matching el
           '//upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Bonny_Bonita.JPG/220px-Bonny_Bonita.JPG',
           '//upload.wikimedia.org/wikipedia/commons/thumb/9/97/Mops_555.jpg/170px-Mops_555.jpg'
         ],
-        serious: ['Pug', 'Pug']
+        serious: ['Pug', 'Pug'],
+        sections: ['1', '1.1', '1.2', '2', '2.1', '2.2', '2.3', '3', '3.1', '3.2', '4', '5', '6', '7']
       })
     }))
 })

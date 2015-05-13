@@ -28,7 +28,7 @@ module.exports = function (schema) {
 
       if (Array.isArray(keySchema)) {
         keySchema = {
-          selector: keySchema[0].selector,
+          selector: keySchema[0].selector || keySchema[0],
           attribute: keySchema[0].attribute,
           isArray: true
         }
