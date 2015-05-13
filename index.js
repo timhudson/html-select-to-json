@@ -4,6 +4,7 @@ var through = require('through2')
 var select = require('html-select')
 var tokenize = require('html-tokenize')
 var jsonComposeStream = require('json-compose-stream')
+var concat = require('concat-stream')
 var streamsEnd = require('./streams-end')
 
 module.exports = function (schema) {
@@ -40,7 +41,7 @@ module.exports = function (schema) {
           var value = el.getAttribute(keySchema.attribute)
 
           if (keySchema.isArray) {
-            return (cache[key] = cache[key] || []).push(value)
+            return addToCache(key, value)
           } else {
             return jsonStream.set(key, value)
           }
@@ -52,7 +53,14 @@ module.exports = function (schema) {
         })
 
         var textStream = pumpify(el.createReadStream(), tr)
-        textStream.pipe(jsonStream.createSetStream(key))
+
+        if (keySchema.isArray) {
+          textStream.pipe(concat(function (data) {
+            addToCache(key, data.toString())
+          }))
+        } else {
+          textStream.pipe(jsonStream.createSetStream(key))
+        }
 
         ender.push(textStream)
       })
@@ -72,6 +80,10 @@ module.exports = function (schema) {
         flush()
       })
     }
+  }
+
+  function addToCache (key, value) {
+    (cache[key] = cache[key] || []).push(value)
   }
 }
 
